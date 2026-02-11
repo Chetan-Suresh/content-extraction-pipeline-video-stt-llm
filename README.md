@@ -17,5 +17,5 @@ The focus of this project is backend architecture, AI integration, and clean sys
 
 ---
 
-## Project Structure
+
 
