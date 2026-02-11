@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Recipe Extractor</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 min-h-screen p-10">
+
+    <div class="max-w-2xl mx-auto bg-white p-8 rounded-xl shadow-lg">
+        <h1 class="text-3xl font-bold text-center text-orange-600 mb-6">🍳 AI Recipe Extractor</h1>
+        
+        <div class="flex gap-2">
+            <input type="text" id="urlInput" placeholder="Paste YouTube URL here..." 
+                class="flex-1 p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500">
+            <button onclick="extractRecipe()" 
+                class="bg-orange-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-orange-700 transition">
+                Extract
+            </button>
+        </div>
+
+        <div id="loading" class="hidden text-center mt-6 text-gray-500">
+            <p class="animate-pulse">🎧 Listening to video & extracting recipe... (This takes ~30s)</p>
+        </div>
+
+        <div id="result" class="hidden mt-8">
+            <h2 id="recipeTitle" class="text-2xl font-bold mb-4"></h2>
+            
+            <div class="bg-orange-50 p-4 rounded-lg mb-6">
+                <h3 class="font-bold text-orange-800 mb-2">🛒 Ingredients</h3>
+                <ul id="ingredientsList" class="list-disc list-inside space-y-1 text-gray-700"></ul>
+            </div>
+
+            <div>
+                <h3 class="font-bold text-gray-800 mb-2">👩‍🍳 Instructions</h3>
+                <div id="stepsList" class="space-y-3 text-gray-600"></div>
+            </div>
+
+            <div class="mt-8 border-t pt-4">
+                <h3 class="font-bold text-gray-800 mb-2">🛍️ Buy on Amazon</h3>
+                <div id="buyLinks" class="flex flex-wrap gap-2"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        async function extractRecipe() {
+            const url = document.getElementById('urlInput').value;
+            const loading = document.getElementById('loading');
+            const result = document.getElementById('result');
+            
+            if(!url) return alert("Please enter a URL!");
+
+            loading.classList.remove('hidden');
+            result.classList.add('hidden');
+
+            try {
+                // Call your API
+                const response = await fetch(`/api/extract?video_url=${encodeURIComponent(url)}`);
+                const data = await response.json();
+
+                if (data.status === "success") {
+                    // Render Title
+                    document.getElementById('recipeTitle').innerText = data.recipe.title;
+
+                    // Render Ingredients
+                    const ingList = document.getElementById('ingredientsList');
+                    ingList.innerHTML = data.recipe.ingredients.map(i => 
+                        `<li><span class="font-semibold">${i.quantity || ''}</span> ${i.name}</li>`
+                    ).join('');
+
+                    // Render Steps
+                    const stepList = document.getElementById('stepsList');
+                    stepList.innerHTML = data.recipe.steps.map((s, index) => 
+                        `<div class="flex gap-3">
+                            <span class="font-bold text-orange-500">${index + 1}.</span>
+                            <p>${s.instruction}</p>
+                        </div>`
+                    ).join('');
+
+                    // Render Buy Links
+                    const buyList = document.getElementById('buyLinks');
+                    buyList.innerHTML = data.buy_links.map(link => 
+                        `<a href="${link.url}" target="_blank" class="text-sm bg-blue-100 text-blue-600 px-3 py-1 rounded-full hover:bg-blue-200">
+                            Buy ${link.ingredient} ↗
+                        </a>`
+                    ).join('');
+
+                    result.classList.remove('hidden');
+                } else {
+                    alert("Error: " + data.reason || data.message);
+                }
+            } catch (e) {
+                alert("Something went wrong!");
+                console.error(e);
+            } finally {
+                loading.classList.add('hidden');
+            }
+        }
+    </script>
+</body>
+</html>
